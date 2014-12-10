@@ -32,6 +32,7 @@
 static struct exchange_nsp_session	*nsp_session = NULL;
 static TDB_CONTEXT			*emsabp_tdb_ctx = NULL;
 
+
 static struct exchange_nsp_session *dcesrv_find_nsp_session(struct GUID *uuid)
 {
 	struct exchange_nsp_session *session, *found_session = NULL;
@@ -45,6 +46,24 @@ static struct exchange_nsp_session *dcesrv_find_nsp_session(struct GUID *uuid)
 	return found_session;
 }
 
+static struct exchange_nsp_session *dcesrv_find_nsp_session_by_username(const char *username)
+{
+	struct exchange_nsp_session	*session, *found_session = NULL;
+	struct emsabp_context		*emsabp_ctx;
+
+ 	for (session = nsp_session; !found_session && session; session = session->next) {
+ 		if (!session->session || !session->session->private_data) {
+ 			continue;
+ 		}
+		emsabp_ctx = (struct emsabp_context *) session->session->private_data;
+		if (strcmp(emsabp_ctx->account_name, username) == 0) {
+			found_session = session;
+		}
+ 	}
+
+	return found_session;
+}
+
 static struct emsabp_context *dcesrv_find_emsabp_context(struct GUID *uuid)
 {
 	struct exchange_nsp_session	*session;
@@ -52,7 +71,7 @@ static struct emsabp_context *dcesrv_find_emsabp_context(struct GUID *uuid)
 
 	session = dcesrv_find_nsp_session(uuid);
 	if (session) {
-		emsabp_ctx = (struct emsabp_context *)session->session->private_data;;
+		emsabp_ctx = (struct emsabp_context *)session->session->private_data;
 	}
 
 	return emsabp_ctx;
@@ -149,26 +168,31 @@ static void dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 	handle = dcesrv_handle_new(dce_call->context, EXCHANGE_HANDLE_NSP);
 	DCESRV_NSP_RETURN_IF(!handle, r, MAPI_E_NOT_ENOUGH_RESOURCES, emsabp_ctx);
 
-	handle->data = (void *) emsabp_ctx;
-	*r->out.handle = handle->wire_handle;
 	r->out.mapiuid = guid;
 
 	/* Search for an existing session and increment ref_count, otherwise create it */
-	session = dcesrv_find_nsp_session(&handle->wire_handle.uuid);
+	session = dcesrv_find_nsp_session_by_username(emsabp_ctx->account_name);
 	if (session) {
 		mpm_session_increment_ref_count(session->session);
-		DEBUG(5, ("  [unexpected]: existing nsp_session: %p; session: %p (ref++)\n", session, session->session));
+		handle->data = session->session->private_data;
+		handle->wire_handle.uuid = session->uuid;
+		*r->out.handle = handle->wire_handle;
+		DEBUG(5, ("[nspi] Existing nsp_session: %s (ref++) %u\n",
+			  emsabp_ctx->account_name, session->session->ref_count));
+		talloc_free(emsabp_ctx);
 	} else {
-		DEBUG(5, ("%s: Creating new session\n", __func__));
+		DEBUG(5, ("[nspi] Creating new session %s\n", emsabp_ctx->account_name));
+
+		handle->data = (void *) emsabp_ctx;
+		*r->out.handle = handle->wire_handle;
 
 		/* Step 6. Associate this emsabp context to the session */
-		session = talloc((TALLOC_CTX *)nsp_session, struct exchange_nsp_session);
+		session = talloc_zero(nsp_session, struct exchange_nsp_session);
 		DCESRV_NSP_RETURN_IF(!session, r, MAPI_E_NOT_ENOUGH_RESOURCES, emsabp_ctx);
 
+		session->uuid = handle->wire_handle.uuid;
 		session->session = mpm_session_init((TALLOC_CTX *)nsp_session, dce_call);
 		DCESRV_NSP_RETURN_IF(!session->session, r, MAPI_E_NOT_ENOUGH_RESOURCES, emsabp_ctx);
-
-		session->uuid = handle->wire_handle.uuid;
 
 		mpm_session_set_private_data(session->session, (void *) emsabp_ctx);
 		mpm_session_set_destructor(session->session, emsabp_destructor);
@@ -217,15 +241,12 @@ static void dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 		if (session) {
 			if (mpm_session_release(session->session)) {
 				DLIST_REMOVE(nsp_session, session);
-				DEBUG(5, ("[%s:%d]: Session found and released\n",
-					  __FUNCTION__, __LINE__));
+				DEBUG(5, ("[nspi] Session found and released\n"));
 			} else {
-				DEBUG(5, ("[%s:%d]: Session found and ref_count decreased\n",
-					  __FUNCTION__, __LINE__));
+				DEBUG(5, ("[nspi] Session found and ref_count decreased\n"));
 			}
-		}
-		else {
-			DEBUG(5, ("  nsp_session NOT found\n"));
+		} else {
+			DEBUG(5, ("[nspi] nsp_session NOT found\n"));
 		}
 	}
 
