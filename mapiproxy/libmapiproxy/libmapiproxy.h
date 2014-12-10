@@ -9,12 +9,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -58,7 +58,7 @@ struct mapiproxy_module {
 	NTSTATUS		(*ndr_pull)(struct dcesrv_call_state *, TALLOC_CTX *, struct ndr_pull *);
 	NTSTATUS		(*pull)(struct dcesrv_call_state *, TALLOC_CTX *, void *);
 	NTSTATUS		(*dispatch)(struct dcesrv_call_state *, TALLOC_CTX *, void *, struct mapiproxy *);
-	NTSTATUS		(*unbind)(struct server_id, uint32_t);
+	NTSTATUS		(*unbind)(struct dcesrv_connection_context *);
 };
 
 
@@ -169,14 +169,14 @@ NTSTATUS mapiproxy_module_push(struct dcesrv_call_state *, TALLOC_CTX *, void *)
 NTSTATUS mapiproxy_module_pull(struct dcesrv_call_state *, TALLOC_CTX *, void *);
 NTSTATUS mapiproxy_module_ndr_pull(struct dcesrv_call_state *, TALLOC_CTX *, struct ndr_pull *);
 NTSTATUS mapiproxy_module_dispatch(struct dcesrv_call_state *, TALLOC_CTX *, void *, struct mapiproxy *);
-NTSTATUS mapiproxy_module_unbind(struct server_id, uint32_t);
+NTSTATUS mapiproxy_module_unbind(struct dcesrv_connection_context *);
 
 const struct mapiproxy_module *mapiproxy_module_byname(const char *);
 
 /* definitions from dcesrv_mapiproxy_server.c */
 NTSTATUS mapiproxy_server_register(const void *);
 NTSTATUS mapiproxy_server_init(struct dcesrv_context *);
-NTSTATUS mapiproxy_server_unbind(struct server_id, uint32_t);
+NTSTATUS mapiproxy_server_unbind(struct dcesrv_connection_context *);
 NTSTATUS mapiproxy_server_dispatch(struct dcesrv_call_state *, TALLOC_CTX *, void *, struct mapiproxy *);
 bool mapiproxy_server_loaded(const char *);
 

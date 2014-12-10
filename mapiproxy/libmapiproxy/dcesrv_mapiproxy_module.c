@@ -134,14 +134,14 @@ NTSTATUS mapiproxy_module_dispatch(struct dcesrv_call_state *dce_call,
 }
 
 
-NTSTATUS mapiproxy_module_unbind(struct server_id server_id, uint32_t context_id)
+NTSTATUS mapiproxy_module_unbind(struct dcesrv_connection_context *conn_context)
 {
 	struct mapiproxy_module_list	*mpm;
 	NTSTATUS			status;
 
 	for (mpm = mpm_list; mpm; mpm = mpm->next) {
 		if (mpm->module->unbind) {
-			status = mpm->module->unbind(server_id, context_id);
+			status = mpm->module->unbind(conn_context);
 			NT_STATUS_NOT_OK_RETURN(status);
 		}
 	}

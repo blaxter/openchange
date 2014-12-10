@@ -181,13 +181,11 @@ static NTSTATUS dcesrv_exchange_ds_rfr_init(struct dcesrv_context *dce_ctx)
 /**
    \details Terminate the RFR connection
 
-   \param server_id reference to the server identifier structure
-   \param context_id the connection context identifier
+   \param conn_ctx reference to dcerpc connection context
 
    \return NT_STATUS_OK on success
  */
-static NTSTATUS dcesrv_exchange_ds_rfr_unbind(struct server_id server_id, 
-					      uint32_t context_id)
+static NTSTATUS dcesrv_exchange_ds_rfr_unbind(struct dcesrv_connection_context *conn_ctx)
 {
 	return NT_STATUS_OK;
 }

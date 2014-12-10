@@ -40,7 +40,7 @@ static NTSTATUS dummy_init(struct dcesrv_context *dce_ctx)
 }
 
 
-static NTSTATUS dummy_unbind(struct server_id server_id, uint32_t context_id)
+static NTSTATUS dummy_unbind(struct dcesrv_connection_context *conn_context)
 {
 	return NT_STATUS_OK;
 }

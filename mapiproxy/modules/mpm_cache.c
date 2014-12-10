@@ -1073,12 +1073,17 @@ static NTSTATUS cache_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 /**
    \details 
  */
-static NTSTATUS cache_unbind(struct server_id server_id, uint32_t context_id)
+static NTSTATUS cache_unbind(struct dcesrv_connection_context *conn_context)
 {
+	struct server_id	server_id;
+	uint32_t		context_id;
 	struct mpm_message	*message;
 	struct mpm_attachment	*attach;
 	struct mpm_stream	*stream;
 	char			*server_id_printable = NULL;
+
+	server_id = conn_context->conn->server_id;
+	context_id = conn_context->context_id;
 
 	/* Look over messages still attached to the session */
 	message = mpm->messages;

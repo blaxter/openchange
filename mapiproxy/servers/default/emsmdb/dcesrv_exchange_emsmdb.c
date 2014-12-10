@@ -9,12 +9,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -2025,33 +2025,12 @@ static NTSTATUS dcesrv_exchange_emsmdb_init(struct dcesrv_context *dce_ctx)
    session and context if still available. This case occurs when the
    client doesn't call EcDoDisconnect but quit unexpectedly.
 
-   \param server_id reference to the server identifier structure
-   \param context_id the connection context identifier
+   \param conn_ctx reference to dcerpc connection context
 
    \return NT_STATUS_OK on success
  */
-
-/* FIXME: code temporarily disabled as we don't master the logic behind session handles yet... */
-static NTSTATUS dcesrv_exchange_emsmdb_unbind(struct server_id server_id, uint32_t context_id)
+static NTSTATUS dcesrv_exchange_emsmdb_unbind(struct dcesrv_connection_context *conn_ctx)
 {
-	/* struct exchange_emsmdb_session	*session; */
-	/* bool ret; */
-
-	DEBUG (0, ("dcesrv_exchange_emsmdb_unbind\n"));
-
-	/* session = dcesrv_find_emsmdb_session_by_server_id(&server_id, context_id); */
-	/* if (session) { */
-	/* 	ret = mpm_session_release(session->session); */
-	/* 	if (ret == true) { */
-	/* 		DLIST_REMOVE(emsmdb_session, session); */
-	/* 		DEBUG(5, ("[%s:%d]: Session found and released\n",  */
-	/* 			  __FUNCTION__, __LINE__)); */
-	/* 	} else { */
-	/* 		DEBUG(5, ("[%s:%d]: Session found and ref_count decreased\n", */
-	/* 			  __FUNCTION__, __LINE__)); */
-	/* 	} */
-	/* } */
-
 	return NT_STATUS_OK;
 }
 

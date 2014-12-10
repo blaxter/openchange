@@ -9,12 +9,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -64,14 +64,22 @@ NTSTATUS mapiproxy_server_dispatch(struct dcesrv_call_state *dce_call,
 }
 
 
-NTSTATUS mapiproxy_server_unbind(struct server_id server_id, uint32_t context_id)
+NTSTATUS mapiproxy_server_unbind(struct dcesrv_connection_context *conn_context)
 {
 	struct mapiproxy_module_list		*server;
 	NTSTATUS				status;
+	const struct ndr_interface_table	*table;
+
+	table = (const struct ndr_interface_table *)conn_context->iface->private_data;
+
+	if (!table || !table->name) return NT_STATUS_OK;
 
 	for (server = server_list; server; server = server->next) {
-		if (server->module->unbind) {
-			status = server->module->unbind(server_id, context_id);
+		if (!server->module->endpoint || !server->module->unbind)
+			continue;
+
+		if (strcmp(table->name, server->module->endpoint) == 0) {
+			status = server->module->unbind(conn_context);
 			NT_STATUS_NOT_OK_RETURN(status);
 		}
 	}
