@@ -25,6 +25,7 @@
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
+#include <time.h>
 #include <ldb.h>
 #include <ldb_errors.h>
 #include <tevent.h>
@@ -55,6 +56,7 @@ struct emsabp_context {
 struct exchange_nsp_session {
 	struct mpm_session		*session;
 	struct GUID			uuid;
+	time_t				last_access;
 	struct exchange_nsp_session	*prev;
 	struct exchange_nsp_session	*next;
 };

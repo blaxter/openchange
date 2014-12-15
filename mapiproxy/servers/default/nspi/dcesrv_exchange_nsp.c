@@ -68,10 +68,23 @@ static struct emsabp_context *dcesrv_find_emsabp_context(struct GUID *uuid)
 {
 	struct exchange_nsp_session	*session;
 	struct emsabp_context		*emsabp_ctx = NULL;
+	time_t				last_access;
 
 	session = dcesrv_find_nsp_session(uuid);
 	if (session) {
 		emsabp_ctx = (struct emsabp_context *)session->session->private_data;
+		/* Update last_access field and put this session on top of our
+		   list because we want nsp_session list sorted by this field
+		   (newer first). */
+		if (time(&last_access) == -1) {
+			OC_ABORT(false, ("Error getting current time (%s)\n", strerror(errno)));
+		} else {
+			DEBUG(5, ("[nspi] Updated session access time (%ld)\n",
+				  (last_access - session->last_access)));
+			session->last_access = last_access;
+		}
+		/* nsp_session will have sessions ordered by last_access time */
+		DLIST_PROMOTE(nsp_session, session);
 	}
 
 	return emsabp_ctx;
@@ -174,9 +187,11 @@ static void dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 	session = dcesrv_find_nsp_session_by_username(emsabp_ctx->account_name);
 	if (session) {
 		mpm_session_increment_ref_count(session->session);
+
 		handle->data = session->session->private_data;
 		handle->wire_handle.uuid = session->uuid;
 		*r->out.handle = handle->wire_handle;
+
 		DEBUG(5, ("[nspi] Existing nsp_session: %s (ref++) %u\n",
 			  emsabp_ctx->account_name, session->session->ref_count));
 		talloc_free(emsabp_ctx);
@@ -187,17 +202,21 @@ static void dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 		*r->out.handle = handle->wire_handle;
 
 		/* Step 6. Associate this emsabp context to the session */
-		session = talloc_zero(nsp_session, struct exchange_nsp_session);
+		session = talloc_zero(talloc_autofree_context(), struct exchange_nsp_session);
 		DCESRV_NSP_RETURN_IF(!session, r, MAPI_E_NOT_ENOUGH_RESOURCES, emsabp_ctx);
 
 		session->uuid = handle->wire_handle.uuid;
-		session->session = mpm_session_init((TALLOC_CTX *)nsp_session, dce_call);
+		session->session = mpm_session_init(session, dce_call);
 		DCESRV_NSP_RETURN_IF(!session->session, r, MAPI_E_NOT_ENOUGH_RESOURCES, emsabp_ctx);
+
+		if (time(&session->last_access) == -1) {
+			OC_ABORT(false, ("Error getting current time (%s)\n", strerror(errno)));
+		}
 
 		mpm_session_set_private_data(session->session, (void *) emsabp_ctx);
 		mpm_session_set_destructor(session->session, emsabp_destructor);
 
-		DLIST_ADD_END(nsp_session, session, struct exchange_nsp_session *);
+		DLIST_ADD(nsp_session, session);
 	}
 
 	DCESRV_NSP_RETURN(r, MAPI_E_SUCCESS, NULL);
@@ -1455,9 +1474,7 @@ static NTSTATUS dcesrv_exchange_nsp_init(struct dcesrv_context *dce_ctx)
 {
 	DEBUG (0, ("dcesrv_exchange_nsp_init\n"));
 	/* Initialize exchange_nsp session */
-	nsp_session = talloc_zero(dce_ctx, struct exchange_nsp_session);
-	if (!nsp_session) return NT_STATUS_NO_MEMORY;
-	nsp_session->session = NULL;
+	nsp_session = NULL;
 
 	/* Open a read-write pointer on the EMSABP TDB database */
 	emsabp_tdb_ctx = emsabp_tdb_init((TALLOC_CTX *)dce_ctx, dce_ctx->lp_ctx);
@@ -1469,7 +1486,58 @@ static NTSTATUS dcesrv_exchange_nsp_init(struct dcesrv_context *dce_ctx)
 	return NT_STATUS_OK;
 }
 
+/**
+   \details Each nspi session has a timestamp field to know when was the
+   last time used, this function releases the ones that have not being used
+   since x seconds ago.
 
+   \param idle_session_in_seconds Number of second to consider a session
+   stalled
+ */
+static void check_idle_nsp_sessions(double idle_session_in_seconds)
+{
+	double				seconds;
+	struct exchange_nsp_session	*session, *to_release_session;
+	time_t				current_time;
+	bool				is_idle;
+	struct emsabp_context		*emsabp_ctx;
+
+	if (time(&current_time) == -1) {
+		OC_ABORT(false, ("Error getting current time (%s)\n", strerror(errno)));
+		return;
+	}
+
+	session = DLIST_TAIL(nsp_session);
+	while (session) {
+		seconds = difftime(current_time, session->last_access);
+		is_idle = seconds > idle_session_in_seconds;
+		if (!is_idle) {
+			/* Stop releasing sessions, this one is consider active */
+			break;
+		}
+
+		/* Session idle, remove it from our list */
+		emsabp_ctx = (struct emsabp_context *)session->session->private_data;
+		DEBUG(3, ("[nspi] Removing idle session %s (%d seconds idle)\n",
+			  emsabp_ctx->account_name, (int)seconds));
+		to_release_session = session;
+		DLIST_REMOVE(nsp_session, session);
+
+		/* Next session to check whether active or not */
+		session = DLIST_PREV(session);
+
+		/* Perform release */
+		to_release_session->session->ref_count = 0;
+		if (mpm_session_release(to_release_session->session)) {
+			talloc_free(to_release_session);
+		} else {
+			DEBUG(1, ("[nspi] Error releasing mpm session!\n"));
+		}
+	}
+}
+
+
+#define IDLE_SESSION_IN_SECONDS (60 * 60 * 8)
 /**
    \details Terminates the NSPI connection and release the associated
    session and context if still available. This case occurs when the
@@ -1481,6 +1549,10 @@ static NTSTATUS dcesrv_exchange_nsp_init(struct dcesrv_context *dce_ctx)
  */
 static NTSTATUS dcesrv_exchange_nsp_unbind(struct dcesrv_connection_context *conn_ctx)
 {
+	DEBUG(5, ("[nspi] dcesrv_exchange_nsp_unbind\n"));
+
+	check_idle_nsp_sessions(IDLE_SESSION_IN_SECONDS);
+
  	return NT_STATUS_OK;
 }
 
