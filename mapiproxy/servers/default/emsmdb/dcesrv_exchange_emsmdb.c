@@ -32,8 +32,8 @@
 #include "mapiproxy/libmapiserver/libmapiserver.h"
 #include "dcesrv_exchange_emsmdb.h"
 
-struct exchange_emsmdb_session		*emsmdb_session = NULL;
-void					*openchange_db_ctx = NULL;
+struct exchange_emsmdb_session	*emsmdb_session = NULL;
+void				*openchange_db_ctx = NULL;
 
 
 static struct exchange_emsmdb_session *dcesrv_find_emsmdb_session(struct GUID *uuid)
@@ -44,6 +44,22 @@ static struct exchange_emsmdb_session *dcesrv_find_emsmdb_session(struct GUID *u
 		if (GUID_equal(uuid, &session->uuid)) {
 			found_session = session;
 		}
+	}
+
+	if (found_session) {
+		time_t last_access;
+		/* Update last_access field and put this session on top of our
+		   list because we want emsmdb_session list sorted by this
+		   field (newer first). */
+		if (time(&last_access) == -1) {
+			OC_ABORT(false, ("Error getting current time (%s)\n", strerror(errno)));
+		} else {
+			DEBUG(0, ("[emsmdb] Updated session access time (%ld)\n",
+				  (last_access - found_session->last_access)));
+			found_session->last_access = last_access;
+		}
+		/* nsp_session will have sessions ordered by last_access time */
+		DLIST_PROMOTE(emsmdb_session, found_session);
 	}
 
 	return found_session;
@@ -220,18 +236,22 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 		*r->out.handle = handle->wire_handle;
 
 		/* Step 7. Associate this emsmdbp context to the session */
-		session = talloc((TALLOC_CTX *)emsmdb_session, struct exchange_emsmdb_session);
+		session = talloc_zero(talloc_autofree_context(), struct exchange_emsmdb_session);
 		OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
 
 		session->uuid = handle->wire_handle.uuid;
 		session->pullTimeStamp = *r->out.pullTimeStamp;
-		session->session = mpm_session_init((TALLOC_CTX *)emsmdb_session, dce_call);
+		session->session = mpm_session_init(session, dce_call);
 		OPENCHANGE_RETVAL_IF(!session->session, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
+
+		if (time(&session->last_access) == -1) {
+			OC_ABORT(false, ("Error getting current time (%s)\n", strerror(errno)));
+		}
 
 		mpm_session_set_private_data(session->session, (void *) emsmdbp_ctx);
 		mpm_session_set_destructor(session->session, emsmdbp_destructor);
 
-		DLIST_ADD_END(emsmdb_session, session, struct exchange_emsmdb_session *);
+		DLIST_ADD(emsmdb_session, session);
 	}
 
 	return MAPI_E_SUCCESS;
@@ -1724,20 +1744,24 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 		talloc_free(emsmdbp_ctx);
         } else {
 		/* Step 7. Associate this emsmdbp context to the session */
-		session = talloc((TALLOC_CTX *)emsmdb_session, struct exchange_emsmdb_session);
+		session = talloc_zero(talloc_autofree_context(), struct exchange_emsmdb_session);
 		OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
 
 		session->uuid = handle->wire_handle.uuid;
 		session->pullTimeStamp = *r->out.pulTimeStamp;
-		session->session = mpm_session_init((TALLOC_CTX *)emsmdb_session, dce_call);
+		session->session = mpm_session_init(session, dce_call);
 		OPENCHANGE_RETVAL_IF(!session->session, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
 
 		mpm_session_set_private_data(session->session, (void *) emsmdbp_ctx);
 		mpm_session_set_destructor(session->session, emsmdbp_destructor);
 
+		if (time(&session->last_access) == -1) {
+			OC_ABORT(false, ("Error getting current time (%s)\n", strerror(errno)));
+		}
+
 		DEBUG(0, ("[exchange_emsmdb]: New session added: %d\n", session->session->context_id));
 
-		DLIST_ADD_END(emsmdb_session, session, struct exchange_emsmdb_session *);
+		DLIST_ADD(emsmdb_session, session);
 	}
 
 	return MAPI_E_SUCCESS;
@@ -2010,9 +2034,7 @@ static NTSTATUS dcesrv_exchange_emsmdb_dispatch(struct dcesrv_call_state *dce_ca
 static NTSTATUS dcesrv_exchange_emsmdb_init(struct dcesrv_context *dce_ctx)
 {
 	/* Initialize exchange_emsmdb session */
-	emsmdb_session = talloc_zero(dce_ctx, struct exchange_emsmdb_session);
-	if (!emsmdb_session) return NT_STATUS_NO_MEMORY;
-	emsmdb_session->session = NULL;
+	emsmdb_session = NULL;
 
 	/* Open read/write context on OpenChange dispatcher database */
 	openchange_db_ctx = emsmdbp_openchangedb_init(dce_ctx->lp_ctx);
@@ -2024,7 +2046,57 @@ static NTSTATUS dcesrv_exchange_emsmdb_init(struct dcesrv_context *dce_ctx)
 	return NT_STATUS_OK;
 }
 
+/**
+   \details Each emsmdb session has a timestamp field to know when was the
+   last time used, this function releases the ones that have not being used
+   since x seconds ago.
 
+   \param idle_session_in_seconds Number of second to consider a session
+   stalled.
+ */
+static void check_idle_emsmdb_sessions(double idle_session_in_seconds)
+{
+	double				seconds;
+	struct exchange_emsmdb_session	*session, *to_release_session;
+	time_t				current_time;
+	bool				is_idle;
+	struct emsmdbp_context		*emsmdbp_ctx;
+
+	if (time(&current_time) == -1) {
+		OC_ABORT(false, ("Error getting current time (%s)\n", strerror(errno)));
+		return;
+	}
+
+	session = DLIST_TAIL(emsmdb_session);
+	while (session) {
+		seconds = difftime(current_time, session->last_access);
+		is_idle = seconds > idle_session_in_seconds;
+		if (!is_idle) {
+			/* Stop releasing sessions, this one is consider active */
+			break;
+		}
+
+		/* Session idle, remove it from our list */
+		emsmdbp_ctx = (struct emsmdbp_context *)session->session->private_data;
+		DEBUG(3, ("[emsmdb] Removing idle session %s (%d seconds idle)\n",
+			  emsmdbp_ctx->username, (int)seconds));
+		to_release_session = session;
+		DLIST_REMOVE(emsmdb_session, session);
+
+		/* Next session to check whether active or not */
+		session = DLIST_PREV(session);
+
+		/* Perform release */
+		to_release_session->session->ref_count = 0;
+		if (mpm_session_release(to_release_session->session)) {
+			talloc_free(to_release_session);
+		} else {
+			DEBUG(1, ("[emsmdb] Error releasing mpm session!\n"));
+		}
+	}
+}
+
+#define IDLE_SESSION_IN_SECONDS (60 * 2)
 /**
    \details Terminate the EMSMDB connection and release the associated
    session and context if still available. This case occurs when the
@@ -2036,6 +2108,10 @@ static NTSTATUS dcesrv_exchange_emsmdb_init(struct dcesrv_context *dce_ctx)
  */
 static NTSTATUS dcesrv_exchange_emsmdb_unbind(struct dcesrv_connection_context *conn_ctx)
 {
+	DEBUG(5, ("[emsmdb] dcesrv_exchange_nsp_unbind\n"));
+
+	check_idle_emsmdb_sessions(IDLE_SESSION_IN_SECONDS);
+
 	return NT_STATUS_OK;
 }
 

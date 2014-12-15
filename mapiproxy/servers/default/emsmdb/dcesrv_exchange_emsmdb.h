@@ -64,6 +64,7 @@ struct exchange_emsmdb_session {
 	uint32_t			pullTimeStamp;
 	struct mpm_session		*session;
         struct GUID                     uuid;
+        time_t				last_access;
 	struct exchange_emsmdb_session	*prev;
 	struct exchange_emsmdb_session	*next;
 };
