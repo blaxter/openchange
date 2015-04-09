@@ -526,6 +526,8 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 		*((uint32_t *)data) = MAPI_MAILUSER;
 		return data;
 	case PR_DISPLAY_TYPE:
+	case PR_DISPLAY_TYPE_EX:
+		/* [MS-OXNSPI] 2.2.3 Display Type Values */
 		data = talloc_zero(mem_ctx, uint32_t);
 		*((uint32_t *)data) = DT_MAILUSER;
 		return data;
