@@ -543,9 +543,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesMessage(TALLOC_CTX *mem_ctx,
 	void			*private_data;
 	bool			mapistore = false;
 	struct emsmdbp_object	*object;
-	uint64_t		messageID;
 	uint32_t		contextID;
-	char			*owner;
 	uint8_t			flags;
 	enum mapistore_error	ret;
 
@@ -586,14 +584,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesMessage(TALLOC_CTX *mem_ctx,
 		break;
 	case true:
                 contextID = emsmdbp_get_contextID(object);
-		messageID = object->object.message->messageID;
 		ret = mapistore_message_save(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, mem_ctx);
 		if (ret == MAPISTORE_ERR_DENIED) {
 			mapi_repl->error_code = MAPI_E_NO_ACCESS;
 			goto end;
 		}
-		owner = emsmdbp_get_owner(object);
-		mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, owner, messageID);
 		break;
 	}
 

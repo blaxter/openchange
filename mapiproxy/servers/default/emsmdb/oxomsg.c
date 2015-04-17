@@ -127,7 +127,6 @@ static void oxomsg_mapistore_handle_message_relocation(struct emsmdbp_context *e
 		emsmdbp_object_copy_properties_submit(emsmdbp_ctx, old_message_object, message_object, &excluded_tags, true);
 
 		mapistore_message_save(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object, mem_ctx);
-		mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, owner, messageID);
 	}
 
 	talloc_free(mem_ctx);
@@ -160,9 +159,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSubmitMessage(TALLOC_CTX *mem_ctx,
 	void			*private_data;
 	bool			mapistore = false;
 	struct emsmdbp_object	*object;
-	char			*owner;
-	uint64_t		messageID;
-	uint32_t		contextID;
 	uint8_t			flags;
 
 	OC_DEBUG(4, "exchange_emsmdb: [OXOMSG] SubmitMessage (0x32)\n");
@@ -221,13 +217,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSubmitMessage(TALLOC_CTX *mem_ctx,
 			}
 		}
 
-		messageID = object->object.message->messageID;
-		contextID = emsmdbp_get_contextID(object);
 		flags = mapi_req->u.mapi_SubmitMessage.SubmitFlags;
-		owner = emsmdbp_get_owner(object);
 		mapistore_message_submit(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, flags);
 		oxomsg_mapistore_handle_message_relocation(emsmdbp_ctx, object);
-		mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, owner, messageID);
 		break;
 	}
 

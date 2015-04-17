@@ -165,58 +165,6 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_add(struct mapistore_context *m
 }
 
 /**
-   \details Add a message record to the indexing database
-
-   \param mstore_ctx pointer to the mapistore context
-   \param context_id the context identifier referencing the indexing
-   database to update
-   \param username the username who owns the new entry
-   \param mid the message ID to add
-
-   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
- */
-enum mapistore_error mapistore_indexing_record_add_mid(struct mapistore_context *mstore_ctx,
-							uint32_t context_id,
-							const char *username,
-							uint64_t mid)
-{
-	int				ret;
-	struct backend_context		*backend_ctx;
-	struct indexing_context		*ictx;
-	char				*mapistore_uri = NULL;
-	TALLOC_CTX			*mem_ctx;
-	bool				invalid_type;
-
-	/* Sanity checks */
-	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-	MAPISTORE_RETVAL_IF(!context_id, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-	MAPISTORE_RETVAL_IF(!mid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-
-	/* Ensure the context exists */
-	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
-	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-	MAPISTORE_RETVAL_IF(!backend_ctx->indexing, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-
-	/* Check if the fid/mid doesn't already exist within the database */
-	ret = mapistore_indexing_add(mstore_ctx, username, &ictx);
-	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERROR, NULL);
-	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
-
-	mem_ctx = talloc_new(NULL);
-	MAPISTORE_RETVAL_IF(!mem_ctx , MAPISTORE_ERR_NO_MEMORY, NULL);
-	/* Retrieve the mapistore URI given context_id and fmid */
-	ret = mapistore_backend_get_path(backend_ctx, mem_ctx, mid, &mapistore_uri);
-	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, MAPISTORE_ERROR, mem_ctx);
-
-	/* Add the record given its fid and mapistore_uri */
-	ret = ictx->add_fmid(ictx, username, mid, mapistore_uri);
-
-	talloc_free(mem_ctx);
-	return ret;
-}
-
-/**
    \details Add a folder record to the indexing database using the given URI
 
    \param mstore_ctx pointer to the mapistore context
