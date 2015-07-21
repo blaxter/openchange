@@ -660,7 +660,6 @@ static int process_newmail_notification(TALLOC_CTX *mem_ctx,
 	enum MAPISTATUS			retval;
 	enum mapistore_error		ret;
 	int				rval;
-	struct indexing_context		*ictx;
 	uint64_t			fid;
 	uint64_t			mid;
 	char				*folder_uri = NULL;
@@ -720,13 +719,6 @@ static int process_newmail_notification(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	/* Open connection to the indexing database */
-	ret = mapistore_indexing_add(p->mstore_ctx, p->username, &ictx);
-	if (ret != MAPISTORE_SUCCESS) {
-		OC_DEBUG(0, "Failed to open connection to indexing database for user %s", p->username);
-		return -1;
-	}
-
 	/* Build the message URI: append folderID with message id */
 	message_uri = talloc_asprintf(mem_ctx, "%s%s", folder_uri, notif->v.v1.u.newmail.eml);
 	talloc_free(folder_uri);
@@ -752,7 +744,7 @@ static int process_newmail_notification(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Register message */
-	ret = ictx->add_fmid(ictx, p->username, mid, message_uri);
+	ret = mapistore_indexing_record_add_fmid(p->mstore_ctx, p->username, mid, message_uri);
 	if (ret != MAPISTORE_SUCCESS) {
 		OC_DEBUG(0, "Unable to register 0x%"PRIx64" with URL=%s", mid, message_uri);
 		talloc_free(message_uri);
