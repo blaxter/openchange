@@ -176,9 +176,9 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_add(struct mapistore_context *m
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-enum mapistore_error mapistore_indexing_record_add_fid(struct mapistore_context *mstore_ctx,
-						       uint32_t context_id, const char *username,
-						       uint64_t fmid, const char *mapistore_uri)
+enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context *mstore_ctx,
+						        uint32_t context_id, const char *username,
+						        uint64_t fmid, const char *mapistore_uri)
 {
 	struct backend_context		*backend_ctx;
 	struct indexing_context		*ictx;
