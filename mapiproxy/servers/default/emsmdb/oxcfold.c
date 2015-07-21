@@ -667,7 +667,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteMessages(TALLOC_CTX *mem_ctx,
 			goto delete_message_response;
 		}
 
-		ret = mapistore_indexing_record_del_fmid(emsmdbp_ctx->mstore_ctx, contextID, owner, mid, MAPISTORE_SOFT_DELETE);
+		ret = mapistore_indexing_record_del_fmid(emsmdbp_ctx->mstore_ctx, owner, mid, MAPISTORE_SOFT_DELETE);
 		if (ret != MAPISTORE_SUCCESS) {
 			mapi_repl->error_code = MAPI_E_CALL_FAILED;
 			goto delete_message_response;
@@ -836,7 +836,7 @@ static enum MAPISTATUS RopEmptyFolder_GenericFolder(TALLOC_CTX *mem_ctx,
 		}
 
 		/* Update indexing entries */
-		retval = emsmdbp_folder_delete_indexing_records(emsmdbp_ctx->mstore_ctx, context_id,
+		retval = emsmdbp_folder_delete_indexing_records(emsmdbp_ctx->mstore_ctx,
 								owner, childFolders[i], deleted_fmids,
 								deleted_fmids_count, flags);
 		if (retval) {

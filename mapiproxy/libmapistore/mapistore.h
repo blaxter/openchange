@@ -386,8 +386,8 @@ bool		mapistore_backend_run_init(init_backend_fn *);
 enum mapistore_error mapistore_backend_init_defaults(struct mapistore_backend *);
 
 /* definitions from mapistore_indexing.c */
-enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context *, uint32_t, const char *, uint64_t, const char *);
-enum mapistore_error mapistore_indexing_record_del_fmid(struct mapistore_context *, uint32_t, const char *, uint64_t, uint8_t);
+enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context *, const char *, uint64_t, const char *);
+enum mapistore_error mapistore_indexing_record_del_fmid(struct mapistore_context *, const char *, uint64_t, uint8_t);
 enum mapistore_error mapistore_indexing_record_get_uri(struct mapistore_context *, const char *, TALLOC_CTX *, uint64_t, char **, bool *);
 enum mapistore_error mapistore_indexing_record_get_fmid(struct mapistore_context *, const char *, const char *, bool, uint64_t *, bool *);
 

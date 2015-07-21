@@ -2577,7 +2577,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportDeletes(TALLOC_CTX *mem_ctx,
 				if (ret != MAPISTORE_SUCCESS) {
 					OC_DEBUG(5, "message deletion failed for fmid: 0x%.16"PRIx64"\n", objectID);
 				}
-				ret = mapistore_indexing_record_del_fmid(emsmdbp_ctx->mstore_ctx, contextID, owner, objectID, delete_type);
+				ret = mapistore_indexing_record_del_fmid(emsmdbp_ctx->mstore_ctx, owner, objectID, delete_type);
 				if (ret != MAPISTORE_SUCCESS) {
 					OC_DEBUG(5, "message deletion of index record failed for fmid: 0x%.16"PRIx64"\n", objectID);
 				}

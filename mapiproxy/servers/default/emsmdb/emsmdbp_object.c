@@ -10,12 +10,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -320,7 +320,7 @@ static enum mapistore_error emsmdbp_object_folder_commit_creation(struct emsmdbp
 		goto end;
 	}
 
-	mapistore_indexing_record_add_fmid(emsmdbp_ctx->mstore_ctx, context_id, owner, fid, mapistore_uri);
+	mapistore_indexing_record_add_fmid(emsmdbp_ctx->mstore_ctx, owner, fid, mapistore_uri);
 	mapistore_properties_set_properties(emsmdbp_ctx->mstore_ctx, context_id, new_folder->backend_object, new_folder->object.folder->postponed_props);
 
 	talloc_unlink(new_folder, new_folder->object.folder->postponed_props);
@@ -460,7 +460,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, st
 					talloc_free(folder_object);
 					return retval;
 				}
-				mapistore_indexing_record_add_fmid(emsmdbp_ctx->mstore_ctx, contextID, owner, fid, path);
+				mapistore_indexing_record_add_fmid(emsmdbp_ctx->mstore_ctx, owner, fid, path);
 			}
 			folder_object->object.folder->contextID = contextID;
 			/* (void) talloc_reference(folder_object, folder_object->backend_object); */
@@ -1655,7 +1655,6 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_move_folder(struct emsmdbp_context 
    \details  Delete the fmids from a folder in the indexing database.
 
    \param mstore_ctx pointer to the mapistore context
-   \param context_id the context identifier
    \param username the owner of the folder to delete its entries
    \param fid the folder identifier
    \param deleted_fmid the array of child fmids from the folder
@@ -1664,18 +1663,18 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_move_folder(struct emsmdbp_context 
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error.
 */
-_PUBLIC_ enum mapistore_error emsmdbp_folder_delete_indexing_records(struct mapistore_context *mstore_ctx, uint32_t context_id, char *username, uint64_t fid, uint64_t *deleted_fmids, uint32_t deleted_fmids_count, uint8_t flags)
+_PUBLIC_ enum mapistore_error emsmdbp_folder_delete_indexing_records(struct mapistore_context *mstore_ctx, char *username, uint64_t fid, uint64_t *deleted_fmids, uint32_t deleted_fmids_count, uint8_t flags)
 {
         enum mapistore_error    ret;
         uint8_t                 delete_type_flag;
         uint32_t                i;
 
         delete_type_flag = (flags & DELETE_HARD_DELETE) ? MAPISTORE_PERMANENT_DELETE : MAPISTORE_SOFT_DELETE;
-        ret = mapistore_indexing_record_del_fmid(mstore_ctx, context_id, username, fid, delete_type_flag);
+        ret = mapistore_indexing_record_del_fmid(mstore_ctx, username, fid, delete_type_flag);
         MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, NULL);
 
         for (i = 0; i < deleted_fmids_count; i++) {
-                ret = mapistore_indexing_record_del_fmid(mstore_ctx, context_id, username,
+                ret = mapistore_indexing_record_del_fmid(mstore_ctx, username,
                                                          deleted_fmids[i], delete_type_flag);
                 MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, NULL);
         }
@@ -1736,7 +1735,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_delete(struct emsmdbp_context *emsm
 		}
 
 		/* Update indexing entries */
-		ret = emsmdbp_folder_delete_indexing_records(emsmdbp_ctx->mstore_ctx, context_id,
+		ret = emsmdbp_folder_delete_indexing_records(emsmdbp_ctx->mstore_ctx,
 							     emsmdbp_get_owner(parent_folder),
 							     fid, deleted_fmids, deleted_fmids_count,
 							     flags);
@@ -1772,7 +1771,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_delete(struct emsmdbp_context *emsm
 			mapistore_del_context(emsmdbp_ctx->mstore_ctx, context_id);
 
 			/* Update indexing entries */
-			ret = emsmdbp_folder_delete_indexing_records(emsmdbp_ctx->mstore_ctx, context_id,
+			ret = emsmdbp_folder_delete_indexing_records(emsmdbp_ctx->mstore_ctx,
 								     emsmdbp_get_owner(parent_folder),
 								     fid, deleted_fmids, deleted_fmids_count,
 								     flags);
@@ -3319,7 +3318,7 @@ static enum mapistore_error emsmdbp_object_root_mapistore_folder_set(struct emsm
 	}
 	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, local_mem_ctx);
 
-	ret = mapistore_indexing_record_del_fmid(emsmdbp_ctx->mstore_ctx, context_id,
+	ret = mapistore_indexing_record_del_fmid(emsmdbp_ctx->mstore_ctx,
 						 owner, folder->object.folder->folderID,
 						 MAPISTORE_PERMANENT_DELETE);
 	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, local_mem_ctx);
@@ -3351,8 +3350,7 @@ static enum mapistore_error emsmdbp_object_root_mapistore_folder_set(struct emsm
 	MAPISTORE_RETVAL_IF(retval != MAPI_E_SUCCESS, MAPISTORE_ERROR, local_mem_ctx);
 
 	/* 5. Set indexing */
-	ret = mapistore_indexing_record_add_fmid(emsmdbp_ctx->mstore_ctx, context_id, owner, fid,
-						 mapistore_uri);
+	ret = mapistore_indexing_record_add_fmid(emsmdbp_ctx->mstore_ctx, owner, fid, mapistore_uri);
 	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, local_mem_ctx);
 
 end:

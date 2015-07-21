@@ -468,7 +468,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 
 			/* instantiate the new folder in the backend to make sure it is initialized properly */
 			retval = mapistore_add_context(emsmdbp_ctx->mstore_ctx, username, mapistore_url, current_fid, &context_id, &backend_object);
-			mapistore_indexing_record_add_fmid(emsmdbp_ctx->mstore_ctx, context_id, username, current_fid, mapistore_url);
+			mapistore_indexing_record_add_fmid(emsmdbp_ctx->mstore_ctx, username, current_fid, mapistore_url);
 			mapistore_del_context(emsmdbp_ctx->mstore_ctx, context_id);
 		}
 	}
@@ -601,7 +601,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 
 			/* instantiate the new folder in the backend to make sure it is initialized properly */
 			retval = mapistore_add_context(emsmdbp_ctx->mstore_ctx, username, mapistore_url, current_fid, &context_id, &backend_object);
-			mapistore_indexing_record_add_fmid(emsmdbp_ctx->mstore_ctx, context_id, username, current_fid, mapistore_url);
+			mapistore_indexing_record_add_fmid(emsmdbp_ctx->mstore_ctx, username, current_fid, mapistore_url);
 			mapistore_del_context(emsmdbp_ctx->mstore_ctx, context_id);
 
 			if (i == EMSMDBP_INBOX) {
@@ -696,7 +696,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 
 			/* instantiate the new folder in the backend to make sure it is initialized properly */
 			retval = mapistore_add_context(emsmdbp_ctx->mstore_ctx, username, mapistore_url, current_fid, &context_id, &backend_object);
-			mapistore_indexing_record_add_fmid(emsmdbp_ctx->mstore_ctx, context_id, username, current_fid, mapistore_url);
+			mapistore_indexing_record_add_fmid(emsmdbp_ctx->mstore_ctx, username, current_fid, mapistore_url);
 			mapistore_del_context(emsmdbp_ctx->mstore_ctx, context_id);
 
 			/* set entryid on mailbox and inbox */
@@ -768,7 +768,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 
 				/* instantiate the new folder in the backend to make sure it is initialized properly */
 				retval = mapistore_add_context(emsmdbp_ctx->mstore_ctx, username, mapistore_url, current_fid, &context_id, &backend_object);
-				mapistore_indexing_record_add_fmid(emsmdbp_ctx->mstore_ctx, context_id, username, current_fid, mapistore_url);
+				mapistore_indexing_record_add_fmid(emsmdbp_ctx->mstore_ctx, username, current_fid, mapistore_url);
 				mapistore_del_context(emsmdbp_ctx->mstore_ctx, context_id);
 			}
 			else {
@@ -805,7 +805,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 
 			/* instantiate the new folder in the backend to make sure it is initialized properly */
 			mapistore_add_context(emsmdbp_ctx->mstore_ctx, username, mapistore_url, current_fid, &context_id, &backend_object);
-			mapistore_indexing_record_add_fmid(emsmdbp_ctx->mstore_ctx, context_id, username, current_fid, mapistore_url);
+			mapistore_indexing_record_add_fmid(emsmdbp_ctx->mstore_ctx, username, current_fid, mapistore_url);
 			mapistore_properties_set_properties(emsmdbp_ctx->mstore_ctx, context_id, backend_object, &property_row);
 		}
 		else {

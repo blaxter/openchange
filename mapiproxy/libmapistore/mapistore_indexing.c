@@ -167,9 +167,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_add(struct mapistore_context *m
 /**
    \details Add a folder record to the indexing database using the given URI
 
-   \param mstore_ctx pointer to the mapistore context
-   \param context_id the context identifier referencing the indexing
-   database to update
+   \param mstore_ctx pointer to the mapistore context database to update
    \param username the username who owns the new entry
    \param fid the folder ID to add
    \param mapistore_uri the URI to map against this fid
@@ -177,24 +175,18 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_add(struct mapistore_context *m
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context *mstore_ctx,
-						        uint32_t context_id, const char *username,
-						        uint64_t fmid, const char *mapistore_uri)
+						        const char *username,
+						        uint64_t fmid,
+						        const char *mapistore_uri)
 {
-	struct backend_context		*backend_ctx;
-	struct indexing_context		*ictx;
-	enum mapistore_error		ret;
+	struct indexing_context	*ictx;
+	enum mapistore_error	ret;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-	MAPISTORE_RETVAL_IF(!context_id, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!mapistore_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-
-	/* Ensure the context exists */
-	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
-	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-	MAPISTORE_RETVAL_IF(!backend_ctx->indexing, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Check if the fid/mid doesn't already exist within the database */
 	ret = mapistore_indexing_add(mstore_ctx, username, &ictx);
@@ -202,49 +194,38 @@ enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
 
 	/* Add the record given its fmid and mapistore_uri */
-	ret = ictx->add_fmid(ictx, username, fmid, mapistore_uri);
-	return ret;
+	return ictx->add_fmid(ictx, username, fmid, mapistore_uri);
 }
 
 /**
    \details Remove a folder or message record from the indexing database
 
    \param mstore_ctx pointer to the mapistore context
-   \param context_id the context identifier referencing the indexing
-   database to update
+   \param username the name of the account
    \param fmid the folder or message ID to delete
    \param flags the type of deletion MAPISTORE_SOFT_DELETE or MAPISTORE_PERMANENT_DELETE
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 enum mapistore_error mapistore_indexing_record_del_fmid(struct mapistore_context *mstore_ctx,
-							uint32_t context_id,
 							const char *username,
 							uint64_t fmid,
 							uint8_t flags)
 {
-	int				ret;
-	struct backend_context		*backend_ctx;
-	struct indexing_context		*ictx;
+	enum mapistore_error	ret;
+	struct indexing_context *ictx;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERROR, NULL);
-	MAPISTORE_RETVAL_IF(!context_id, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERROR, NULL);
-
-	/* Ensure the context exists */
-	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
-	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-	MAPISTORE_RETVAL_IF(!backend_ctx->indexing, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Check if the fid/mid still exists within the database */
 	ret = mapistore_indexing_add(mstore_ctx, username, &ictx);
 	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERROR, NULL);
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
 
-	ret = ictx->del_fmid(ictx, username, fmid, flags);
-
-	return ret;
+	return ictx->del_fmid(ictx, username, fmid, flags);
 }
 
 /**
