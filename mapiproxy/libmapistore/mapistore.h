@@ -9,12 +9,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -26,7 +26,7 @@
    \file mapistore.h
 
    \brief MAPISTORE general API
-   
+
    This header contains general functions, primarily for
    users of the store (rather than storage providers).
  */
@@ -386,10 +386,9 @@ bool		mapistore_backend_run_init(init_backend_fn *);
 enum mapistore_error mapistore_backend_init_defaults(struct mapistore_backend *);
 
 /* definitions from mapistore_indexing.c */
-enum mapistore_error mapistore_indexing_record_add_fid(struct mapistore_context *, uint32_t, const char *, uint64_t);
+enum mapistore_error mapistore_indexing_record_add_fid(struct mapistore_context *, uint32_t, const char *, uint64_t, const char *);
 enum mapistore_error mapistore_indexing_record_del_fmid(struct mapistore_context *, uint32_t, const char *, uint64_t, uint8_t);
 enum mapistore_error mapistore_indexing_record_add_mid(struct mapistore_context *, uint32_t, const char *, uint64_t);
-enum mapistore_error mapistore_indexing_record_add_fmid_for_uri(struct mapistore_context *, uint32_t, const char *, uint64_t, const char *);
 enum mapistore_error mapistore_indexing_record_get_uri(struct mapistore_context *, const char *, TALLOC_CTX *, uint64_t, char **, bool *);
 enum mapistore_error mapistore_indexing_record_get_fmid(struct mapistore_context *, const char *, const char *, bool, uint64_t *, bool *);
 

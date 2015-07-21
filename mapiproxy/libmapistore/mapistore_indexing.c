@@ -5,7 +5,7 @@
 
    Copyright (C) Julien Kerihuel 2010
    Copyright (C) Carlos Pérez-Aradros Herce 2014
-   Copyright (C) Jesús García Sáez 2014
+   Copyright (C) Jesús García Sáez 2014-2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
    \file mapistore_indexing.c
 
    \brief MAPISTORE internal indexing functions
-   
+
    This file contains functionality to map between folder / message
    identifiers and backend URI strings.
  */
@@ -122,7 +122,7 @@ struct indexing_context *mapistore_indexing_search(struct mapistore_context *mst
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ enum mapistore_error mapistore_indexing_add(struct mapistore_context *mstore_ctx, 
+_PUBLIC_ enum mapistore_error mapistore_indexing_add(struct mapistore_context *mstore_ctx,
 						     const char *username,
 						     struct indexing_context **ictxp)
 {
@@ -165,35 +165,33 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_add(struct mapistore_context *m
 }
 
 /**
-   \details Add a folder or message record to the indexing database
+   \details Add a message record to the indexing database
 
    \param mstore_ctx pointer to the mapistore context
    \param context_id the context identifier referencing the indexing
    database to update
    \param username the username who owns the new entry
-   \param fmid the folder or message ID to add
-   \param type MAPISTORE_FOLDER or MAPISTORE_MESSAGE
+   \param mid the message ID to add
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context *mstore_ctx,
+enum mapistore_error mapistore_indexing_record_add_mid(struct mapistore_context *mstore_ctx,
 							uint32_t context_id,
 							const char *username,
-							uint64_t fmid, int type)
+							uint64_t mid)
 {
 	int				ret;
 	struct backend_context		*backend_ctx;
 	struct indexing_context		*ictx;
-	char				*mapistore_URI = NULL;
+	char				*mapistore_uri = NULL;
 	TALLOC_CTX			*mem_ctx;
 	bool				invalid_type;
 
 	/* Sanity checks */
-	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERROR, NULL);
-	MAPISTORE_RETVAL_IF(!context_id, MAPISTORE_ERROR, NULL);
-	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERROR, NULL);
-	invalid_type = type != MAPISTORE_FOLDER && type != MAPISTORE_MESSAGE;
-	MAPISTORE_RETVAL_IF(invalid_type, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!context_id, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!mid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Ensure the context exists */
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
@@ -208,32 +206,31 @@ enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context
 	mem_ctx = talloc_new(NULL);
 	MAPISTORE_RETVAL_IF(!mem_ctx , MAPISTORE_ERR_NO_MEMORY, NULL);
 	/* Retrieve the mapistore URI given context_id and fmid */
-	ret = mapistore_backend_get_path(backend_ctx, mem_ctx, fmid, &mapistore_URI);
+	ret = mapistore_backend_get_path(backend_ctx, mem_ctx, mid, &mapistore_uri);
 	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, MAPISTORE_ERROR, mem_ctx);
 
 	/* Add the record given its fid and mapistore_uri */
-	ret = ictx->add_fmid(ictx, username, fmid, mapistore_URI);
+	ret = ictx->add_fmid(ictx, username, mid, mapistore_uri);
 
 	talloc_free(mem_ctx);
 	return ret;
 }
 
 /**
-   \details Add a folder or message record to the indexing database
-   using the given URI
+   \details Add a folder record to the indexing database using the given URI
 
    \param mstore_ctx pointer to the mapistore context
    \param context_id the context identifier referencing the indexing
    database to update
    \param username the username who owns the new entry
-   \param fmid the folder or message ID to add
-   \param mapistore_uri the URI to map against this fmid
+   \param fid the folder ID to add
+   \param mapistore_uri the URI to map against this fid
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-enum mapistore_error mapistore_indexing_record_add_fmid_for_uri(struct mapistore_context *mstore_ctx,
-								uint32_t context_id, const char *username,
-								uint64_t fmid, const char *mapistore_uri)
+enum mapistore_error mapistore_indexing_record_add_fid(struct mapistore_context *mstore_ctx,
+						       uint32_t context_id, const char *username,
+						       uint64_t fmid, const char *mapistore_uri)
 {
 	struct backend_context		*backend_ctx;
 	struct indexing_context		*ictx;
@@ -260,7 +257,6 @@ enum mapistore_error mapistore_indexing_record_add_fmid_for_uri(struct mapistore
 	ret = ictx->add_fmid(ictx, username, fmid, mapistore_uri);
 	return ret;
 }
-
 
 /**
    \details Remove a folder or message record from the indexing database
@@ -320,7 +316,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_record_get_uri(struct mapistore
 {
 	struct indexing_context	*ictx;
 	int			ret;
-	
+
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
@@ -352,44 +348,6 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_record_get_fmid(struct mapistor
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
 
 	return ictx->get_fmid(ictx, username, uri, partial, fmidp, soft_deletedp);
-}
-
-/**
-   \details Add a fid record to the indexing database
-
-   \param mstore_ctx pointer to the mapistore context
-   \param context_id the context identifier referencing the indexing
-   database to update
-   \param fid the fid to add
-
-   \note This is a wrapper to the internal common
-   mapistore_indexing_record_add_fmid function.
-
-   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
- */
-_PUBLIC_ enum mapistore_error mapistore_indexing_record_add_fid(struct mapistore_context *mstore_ctx,
-                                                               uint32_t context_id, const char *username, uint64_t fid)
-{
-       return mapistore_indexing_record_add_fmid(mstore_ctx, context_id, username, fid, MAPISTORE_FOLDER);
-}
-
-/**
-   \details Add a mid record to the indexing database
-
-   \param mstore_ctx pointer to the mapistore context
-   \param context_id the context identifier referencing the indexing
-   database to update
-   \param mid the mid to add
-
-   \note This is a wrapper to the internal common
-   mapistore_indexing_record_add_fmid function.
-
-   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
- */
-_PUBLIC_ enum mapistore_error mapistore_indexing_record_add_mid(struct mapistore_context *mstore_ctx,
-                                                               uint32_t context_id, const char *username, uint64_t mid)
-{
-       return mapistore_indexing_record_add_fmid(mstore_ctx, context_id, username, mid, MAPISTORE_MESSAGE);
 }
 
 static enum mapistore_error mapistore_indexing_allocate_fid(struct mapistore_context *mstore_ctx,

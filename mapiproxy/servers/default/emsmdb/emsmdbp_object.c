@@ -320,9 +320,7 @@ static enum mapistore_error emsmdbp_object_folder_commit_creation(struct emsmdbp
 		goto end;
 	}
 
-	mapistore_indexing_record_add_fmid_for_uri(emsmdbp_ctx->mstore_ctx, context_id, owner, fid,
-						   mapistore_uri);
-
+	mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, context_id, owner, fid, mapistore_uri);
 	mapistore_properties_set_properties(emsmdbp_ctx->mstore_ctx, context_id, new_folder->backend_object, new_folder->object.folder->postponed_props);
 
 	talloc_unlink(new_folder, new_folder->object.folder->postponed_props);
@@ -462,7 +460,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, st
 					talloc_free(folder_object);
 					return retval;
 				}
-				mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, contextID, owner, fid);
+				mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, contextID, owner, fid, path);
 			}
 			folder_object->object.folder->contextID = contextID;
 			/* (void) talloc_reference(folder_object, folder_object->backend_object); */
@@ -3353,8 +3351,8 @@ static enum mapistore_error emsmdbp_object_root_mapistore_folder_set(struct emsm
 	MAPISTORE_RETVAL_IF(retval != MAPI_E_SUCCESS, MAPISTORE_ERROR, local_mem_ctx);
 
 	/* 5. Set indexing */
-	ret = mapistore_indexing_record_add_fmid_for_uri(emsmdbp_ctx->mstore_ctx, context_id, owner, fid,
-							 mapistore_uri);
+	ret = mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, context_id, owner, fid,
+						mapistore_uri);
 	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, local_mem_ctx);
 
 end:

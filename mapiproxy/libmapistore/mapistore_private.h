@@ -9,12 +9,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -189,8 +189,6 @@ struct tdb_wrap *mapistore_tdb_wrap_open(TALLOC_CTX *, const char *, int, int, i
 /* definitions from mapistore_indexing.c */
 struct indexing_context *mapistore_indexing_search(struct mapistore_context *, const char *);
 enum mapistore_error mapistore_indexing_add(struct mapistore_context *, const char *, struct indexing_context **);
-enum mapistore_error mapistore_indexing_record_add(TALLOC_CTX *, struct indexing_context_list *, uint64_t, const char *);
-enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context *, uint32_t, const char *, uint64_t, int type);
 
 /* definitions from mapistore_notification.c */
 enum mapistore_error mapistore_notification_init(TALLOC_CTX *, struct loadparm_context *, struct mapistore_notification_context **);
