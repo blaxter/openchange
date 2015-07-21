@@ -667,7 +667,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteMessages(TALLOC_CTX *mem_ctx,
 			goto delete_message_response;
 		}
 
-		ret = mapistore_indexing_record_del_mid(emsmdbp_ctx->mstore_ctx, contextID, owner, mid, MAPISTORE_SOFT_DELETE);
+		ret = mapistore_indexing_record_del_fmid(emsmdbp_ctx->mstore_ctx, contextID, owner, mid, MAPISTORE_SOFT_DELETE);
 		if (ret != MAPISTORE_SUCCESS) {
 			mapi_repl->error_code = MAPI_E_CALL_FAILED;
 			goto delete_message_response;

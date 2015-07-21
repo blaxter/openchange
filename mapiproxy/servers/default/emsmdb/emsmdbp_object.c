@@ -1673,12 +1673,12 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_delete_indexing_records(struct mapi
         uint32_t                i;
 
         delete_type_flag = (flags & DELETE_HARD_DELETE) ? MAPISTORE_PERMANENT_DELETE : MAPISTORE_SOFT_DELETE;
-        ret = mapistore_indexing_record_del_fid(mstore_ctx, context_id, username, fid, delete_type_flag);
+        ret = mapistore_indexing_record_del_fmid(mstore_ctx, context_id, username, fid, delete_type_flag);
         MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, NULL);
 
         for (i = 0; i < deleted_fmids_count; i++) {
-                ret = mapistore_indexing_record_del_fid(mstore_ctx, context_id, username,
-                                                        deleted_fmids[i], delete_type_flag);
+                ret = mapistore_indexing_record_del_fmid(mstore_ctx, context_id, username,
+                                                         deleted_fmids[i], delete_type_flag);
                 MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, NULL);
         }
 
@@ -3321,9 +3321,9 @@ static enum mapistore_error emsmdbp_object_root_mapistore_folder_set(struct emsm
 	}
 	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, local_mem_ctx);
 
-	ret = mapistore_indexing_record_del_fid(emsmdbp_ctx->mstore_ctx, context_id,
-						owner, folder->object.folder->folderID,
-						MAPISTORE_PERMANENT_DELETE);
+	ret = mapistore_indexing_record_del_fmid(emsmdbp_ctx->mstore_ctx, context_id,
+						 owner, folder->object.folder->folderID,
+						 MAPISTORE_PERMANENT_DELETE);
 	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, local_mem_ctx);
 
 	/* 2. Create the mapistore folder with the new role */

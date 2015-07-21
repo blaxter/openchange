@@ -191,7 +191,6 @@ struct indexing_context *mapistore_indexing_search(struct mapistore_context *, c
 enum mapistore_error mapistore_indexing_add(struct mapistore_context *, const char *, struct indexing_context **);
 enum mapistore_error mapistore_indexing_record_add(TALLOC_CTX *, struct indexing_context_list *, uint64_t, const char *);
 enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context *, uint32_t, const char *, uint64_t, int type);
-enum mapistore_error mapistore_indexing_record_del_fmid(struct mapistore_context *, uint32_t, const char *, uint64_t, uint8_t, int type);
 
 /* definitions from mapistore_notification.c */
 enum mapistore_error mapistore_notification_init(TALLOC_CTX *, struct loadparm_context *, struct mapistore_notification_context **);

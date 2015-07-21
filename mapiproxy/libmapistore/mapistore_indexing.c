@@ -11,12 +11,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -270,13 +270,14 @@ enum mapistore_error mapistore_indexing_record_add_fmid_for_uri(struct mapistore
    database to update
    \param fmid the folder or message ID to delete
    \param flags the type of deletion MAPISTORE_SOFT_DELETE or MAPISTORE_PERMANENT_DELETE
-   \param type MAPISTORE_FOLDER or MAPISTORE_MESSAGE
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 enum mapistore_error mapistore_indexing_record_del_fmid(struct mapistore_context *mstore_ctx,
-							uint32_t context_id, const char *username, uint64_t fmid,
-							uint8_t flags, int type)
+							uint32_t context_id,
+							const char *username,
+							uint64_t fmid,
+							uint8_t flags)
 {
 	int				ret;
 	struct backend_context		*backend_ctx;
@@ -297,14 +298,7 @@ enum mapistore_error mapistore_indexing_record_del_fmid(struct mapistore_context
 	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERROR, NULL);
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
 
-	switch(type) {
-	case MAPISTORE_FOLDER:
-	case MAPISTORE_MESSAGE:
-		ret = ictx->del_fmid(ictx, username, fmid, flags);
-		break;
-	default:
-		return MAPISTORE_ERR_INVALID_PARAMETER;
-	}
+	ret = ictx->del_fmid(ictx, username, fmid, flags);
 
 	return ret;
 }
@@ -374,31 +368,10 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_record_get_fmid(struct mapistor
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ enum mapistore_error mapistore_indexing_record_add_fid(struct mapistore_context *mstore_ctx,
-								uint32_t context_id, const char *username, uint64_t fid)
+                                                               uint32_t context_id, const char *username, uint64_t fid)
 {
-	return mapistore_indexing_record_add_fmid(mstore_ctx, context_id, username, fid, MAPISTORE_FOLDER);
+       return mapistore_indexing_record_add_fmid(mstore_ctx, context_id, username, fid, MAPISTORE_FOLDER);
 }
-
-
-/**
-   \details Delete a fid record from the indexing database
-
-   \param mstore_ctx pointer to the mapistore context
-   \param context_id the context identifier referencing the indexing
-   database to update
-   \param fid the fid to remove
-   \param flags the type of deletion MAPISTORE_SOFT_DELETE or
-   MAPISTORE_PERMANENT_DELETE
-
-   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
- */
-_PUBLIC_ enum mapistore_error mapistore_indexing_record_del_fid(struct mapistore_context *mstore_ctx,
-								uint32_t context_id, const char *username, uint64_t fid, 
-								uint8_t flags)
-{
-	return mapistore_indexing_record_del_fmid(mstore_ctx, context_id, username, fid, flags, MAPISTORE_FOLDER);
-}
-
 
 /**
    \details Add a mid record to the indexing database
@@ -414,29 +387,9 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_record_del_fid(struct mapistore
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ enum mapistore_error mapistore_indexing_record_add_mid(struct mapistore_context *mstore_ctx,
-								uint32_t context_id, const char *username, uint64_t mid)
+                                                               uint32_t context_id, const char *username, uint64_t mid)
 {
-	return mapistore_indexing_record_add_fmid(mstore_ctx, context_id, username, mid, MAPISTORE_MESSAGE);
-}
-
-
-/**
-   \details Delete a mid record from the indexing database
-
-   \param mstore_ctx pointer to the mapistore context
-   \param context_id the context identifier referencing the indexing
-   database to update
-   \param mid the mid to remove
-   \param flags the type of deletion MAPISTORE_SOFT_DELETE or
-   MAPISTORE_PERMANENT_DELETE
-
-   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
- */
-_PUBLIC_ enum mapistore_error mapistore_indexing_record_del_mid(struct mapistore_context *mstore_ctx,
-								uint32_t context_id, const char *username, uint64_t mid,
-								uint8_t flags)
-{
-	return mapistore_indexing_record_del_fmid(mstore_ctx, context_id, username, mid, flags, MAPISTORE_MESSAGE);
+       return mapistore_indexing_record_add_fmid(mstore_ctx, context_id, username, mid, MAPISTORE_MESSAGE);
 }
 
 static enum mapistore_error mapistore_indexing_allocate_fid(struct mapistore_context *mstore_ctx,
