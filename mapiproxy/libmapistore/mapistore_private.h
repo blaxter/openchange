@@ -187,7 +187,6 @@ enum mapistore_error mapistore_backend_manager_generate_uri(struct backend_conte
 struct tdb_wrap *mapistore_tdb_wrap_open(TALLOC_CTX *, const char *, int, int, int, mode_t);
 
 /* definitions from mapistore_indexing.c */
-struct indexing_context *mapistore_indexing_search(struct mapistore_context *, const char *);
 enum mapistore_error mapistore_indexing_add(struct mapistore_context *, const char *, struct indexing_context **);
 
 /* definitions from mapistore_notification.c */

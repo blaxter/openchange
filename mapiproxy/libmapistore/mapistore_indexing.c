@@ -93,8 +93,8 @@ _PUBLIC_ char *mapistore_get_default_cache_url(void)
 
    \return pointer to the tdb_wrap structure on success, otherwise NULL
  */
-struct indexing_context *mapistore_indexing_search(struct mapistore_context *mstore_ctx,
-						   const char *username)
+static struct indexing_context *mapistore_indexing_search(struct mapistore_context *mstore_ctx,
+							  const char *username)
 {
 	struct indexing_context_list	*el;
 
@@ -260,7 +260,12 @@ enum mapistore_error mapistore_indexing_record_del_fmid(struct mapistore_context
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ enum mapistore_error mapistore_indexing_record_get_uri(struct mapistore_context *mstore_ctx, const char *username, TALLOC_CTX *mem_ctx, uint64_t fmid, char **urip, bool *soft_deletedp)
+_PUBLIC_ enum mapistore_error mapistore_indexing_record_get_uri(struct mapistore_context *mstore_ctx,
+								const char *username,
+								TALLOC_CTX *mem_ctx,
+								uint64_t fmid,
+								char **urip,
+								bool *soft_deletedp)
 {
 	struct indexing_context	*ictx;
 	int			ret;
@@ -279,7 +284,12 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_record_get_uri(struct mapistore
 	return ictx->get_uri(ictx, username, mem_ctx, fmid, urip, soft_deletedp);
 }
 
-_PUBLIC_ enum mapistore_error mapistore_indexing_record_get_fmid(struct mapistore_context *mstore_ctx, const char *username, const char *uri, bool partial, uint64_t *fmidp, bool *soft_deletedp)
+_PUBLIC_ enum mapistore_error mapistore_indexing_record_get_fmid(struct mapistore_context *mstore_ctx,
+								 const char *username,
+								 const char *uri,
+								 bool partial,
+								 uint64_t *fmidp,
+								 bool *soft_deletedp)
 {
 	struct indexing_context		*ictx;
 	int				ret;
