@@ -30,12 +30,13 @@
 #include <credentials.h>
 #include <ldb_errors.h>
 #include <ldb_wrap.h>
-#include <ldap_ndr.h>
 
 #include <gen_ndr/ndr_samr.h>
 #include <gen_ndr/ndr_samr_c.h>
 
 #include <time.h>
+
+char *ldap_encode_ndr_dom_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid);
 
 /**
 	\file

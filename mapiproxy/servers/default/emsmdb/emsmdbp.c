@@ -32,8 +32,6 @@
 #include "mapiproxy/libmapiproxy/fault_util.h"
 #include "mapiproxy/util/samdb.h"
 
-#include <ldap_ndr.h>
-
 
 static struct GUID MagicGUID = {
 	.time_low = 0xbeefface,
